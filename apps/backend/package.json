@@ -1,0 +1,21 @@
+{
+  "name": "@honoddd/backend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./src/index.ts --target bun --outdir dist --external @honoddd/contract",
+    "dev": "bun --hot src/index.ts",
+    "start": "bun src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@honoddd/contract": "workspace:*",
+    "@orpc/openapi": "latest",
+    "@orpc/server": "latest",
+    "@orpc/zod": "latest",
+    "hono": "latest",
+    "zod": "latest"
+  }
+}
