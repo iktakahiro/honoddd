@@ -20,7 +20,7 @@ export class CompleteTodoUseCase {
       }
 
       todo.complete();
-      await this.todoRepository.save(todo, ctx);
+      await this.todoRepository.update(todo, ctx);
 
       return todo;
     });

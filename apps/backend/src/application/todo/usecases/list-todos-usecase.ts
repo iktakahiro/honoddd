@@ -10,8 +10,6 @@ export class ListTodosUseCase {
   ) {}
 
   async execute(filter?: { status?: TodoStatus }): Promise<Todo[]> {
-    return this.transactionManager.runInTransaction((ctx) =>
-      this.todoRepository.findAll(filter, ctx),
-    );
+    return this.transactionManager.runInTransaction((ctx) => this.todoRepository.list(filter, ctx));
   }
 }

@@ -20,7 +20,7 @@ export class StartTodoUseCase {
       }
 
       todo.start();
-      await this.todoRepository.save(todo, ctx);
+      await this.todoRepository.update(todo, ctx);
 
       return todo;
     });

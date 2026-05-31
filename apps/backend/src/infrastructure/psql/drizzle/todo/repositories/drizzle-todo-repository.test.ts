@@ -25,7 +25,7 @@ describe("DrizzleTodoRepository", () => {
         title: TodoTitle.create("Persist todos with Drizzle"),
       });
 
-      await transactionManager.runInTransaction((ctx) => repository.save(todo, ctx));
+      await transactionManager.runInTransaction((ctx) => repository.create(todo, ctx));
 
       const found = await repository.findById(todo.id);
 
@@ -37,9 +37,9 @@ describe("DrizzleTodoRepository", () => {
       expect(found?.createdAt.toISOString()).toBe("2026-05-31T00:00:00.000Z");
 
       todo.start(new Date("2026-05-31T00:01:00.000Z"));
-      await transactionManager.runInTransaction((ctx) => repository.save(todo, ctx));
+      await transactionManager.runInTransaction((ctx) => repository.update(todo, ctx));
 
-      const inProgressTodos = await repository.findAll({
+      const inProgressTodos = await repository.list({
         status: TodoStatus.InProgress,
       });
 
@@ -68,7 +68,7 @@ describe("DrizzleTodoRepository", () => {
 
       await expect(
         transactionManager.runInTransaction(async (ctx) => {
-          await repository.save(todo, ctx);
+          await repository.create(todo, ctx);
           await ctx.rollback();
         }),
       ).rejects.toThrow();

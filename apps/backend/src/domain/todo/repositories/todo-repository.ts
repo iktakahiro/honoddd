@@ -4,8 +4,9 @@ import type { TodoId } from "../value-objects/todo-id";
 import type { TodoStatus } from "../value-objects/todo-status";
 
 export interface TodoRepository {
-  delete(todoId: TodoId, ctx?: TransactionContext): Promise<void>;
-  findAll(filter?: { status?: TodoStatus }, ctx?: TransactionContext): Promise<Todo[]>;
+  create(todo: Todo, ctx?: TransactionContext): Promise<void>;
+  update(todo: Todo, ctx?: TransactionContext): Promise<void>;
   findById(todoId: TodoId, ctx?: TransactionContext): Promise<Todo | null>;
-  save(todo: Todo, ctx?: TransactionContext): Promise<void>;
+  list(filter?: { status?: TodoStatus }, ctx?: TransactionContext): Promise<Todo[]>;
+  delete(todoId: TodoId, ctx?: TransactionContext): Promise<void>;
 }

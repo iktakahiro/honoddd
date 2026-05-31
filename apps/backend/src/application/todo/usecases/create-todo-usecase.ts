@@ -24,7 +24,7 @@ export class CreateTodoUseCase {
       title: TodoTitle.create(input.title),
     });
 
-    await this.transactionManager.runInTransaction((ctx) => this.todoRepository.save(todo, ctx));
+    await this.transactionManager.runInTransaction((ctx) => this.todoRepository.create(todo, ctx));
 
     return todo;
   }

@@ -11,12 +11,12 @@ export const todoStatusEnum = pgEnum("todo_status", [
 export const todoTable = pgTable(
   "todos",
   {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    description: text("description"),
+    status: todoStatusEnum("status").notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
-    description: text("description"),
-    id: text("id").primaryKey(),
-    status: todoStatusEnum("status").notNull(),
-    title: text("title").notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (table) => [index("todos_status_idx").on(table.status)],

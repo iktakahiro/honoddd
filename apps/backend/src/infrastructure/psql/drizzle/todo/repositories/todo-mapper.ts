@@ -4,6 +4,11 @@ import { TodoId } from "../../../../../domain/todo/value-objects/todo-id";
 import { TodoTitle } from "../../../../../domain/todo/value-objects/todo-title";
 import type { TodoTableInsert, TodoTableRow } from "../../schemas/todo-schema";
 
+export type TodoTableUpdate = Pick<
+  TodoTableInsert,
+  "completedAt" | "description" | "status" | "title" | "updatedAt"
+>;
+
 export function toTodo(row: TodoTableRow): Todo {
   return Todo.restore({
     completedAt: row.completedAt,
@@ -24,6 +29,18 @@ export function toTodoTableInsert(todo: Todo): TodoTableInsert {
     createdAt: snapshot.createdAt,
     description: snapshot.description?.value ?? null,
     id: snapshot.id,
+    status: snapshot.status,
+    title: snapshot.title.value,
+    updatedAt: snapshot.updatedAt,
+  };
+}
+
+export function toTodoTableUpdate(todo: Todo): TodoTableUpdate {
+  const snapshot = todo.snapshot();
+
+  return {
+    completedAt: snapshot.completedAt,
+    description: snapshot.description?.value ?? null,
     status: snapshot.status,
     title: snapshot.title.value,
     updatedAt: snapshot.updatedAt,

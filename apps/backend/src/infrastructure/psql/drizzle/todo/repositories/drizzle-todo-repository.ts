@@ -13,7 +13,7 @@ import {
 } from "../../drizzle-database";
 import { getDrizzleTransaction } from "../../drizzle-transaction";
 import { todoTable } from "../../schemas/todo-schema";
-import { toTodo, toTodoTableInsert } from "./todo-mapper";
+import { toTodo, toTodoTableInsert, toTodoTableUpdate } from "./todo-mapper";
 
 export class DrizzleTodoRepository implements TodoRepository {
   private readonly ready: Promise<void>;
@@ -30,13 +30,34 @@ export class DrizzleTodoRepository implements TodoRepository {
     await this.db.$client.close();
   }
 
-  async delete(todoId: TodoId, ctx?: TransactionContext): Promise<void> {
+  async create(todo: Todo, ctx?: TransactionContext): Promise<void> {
     await this.ready;
 
-    await this.getExecutor(ctx).delete(todoTable).where(eq(todoTable.id, todoId));
+    await this.getExecutor(ctx).insert(todoTable).values(toTodoTableInsert(todo));
   }
 
-  async findAll(filter: { status?: TodoStatus } = {}, ctx?: TransactionContext): Promise<Todo[]> {
+  async update(todo: Todo, ctx?: TransactionContext): Promise<void> {
+    await this.ready;
+
+    await this.getExecutor(ctx)
+      .update(todoTable)
+      .set(toTodoTableUpdate(todo))
+      .where(eq(todoTable.id, todo.id));
+  }
+
+  async findById(todoId: TodoId, ctx?: TransactionContext): Promise<Todo | null> {
+    await this.ready;
+
+    const [row] = await this.getExecutor(ctx)
+      .select()
+      .from(todoTable)
+      .where(eq(todoTable.id, todoId))
+      .limit(1);
+
+    return row === undefined ? null : toTodo(row);
+  }
+
+  async list(filter: { status?: TodoStatus } = {}, ctx?: TransactionContext): Promise<Todo[]> {
     await this.ready;
     const db = this.getExecutor(ctx);
 
@@ -52,37 +73,10 @@ export class DrizzleTodoRepository implements TodoRepository {
     return rows.map(toTodo);
   }
 
-  async findById(todoId: TodoId, ctx?: TransactionContext): Promise<Todo | null> {
+  async delete(todoId: TodoId, ctx?: TransactionContext): Promise<void> {
     await this.ready;
 
-    const [row] = await this.getExecutor(ctx)
-      .select()
-      .from(todoTable)
-      .where(eq(todoTable.id, todoId))
-      .limit(1);
-
-    return row === undefined ? null : toTodo(row);
-  }
-
-  async save(todo: Todo, ctx?: TransactionContext): Promise<void> {
-    await this.ready;
-
-    const row = toTodoTableInsert(todo);
-
-    await this.getExecutor(ctx)
-      .insert(todoTable)
-      .values(row)
-      .onConflictDoUpdate({
-        set: {
-          completedAt: row.completedAt,
-          createdAt: row.createdAt,
-          description: row.description,
-          status: row.status,
-          title: row.title,
-          updatedAt: row.updatedAt,
-        },
-        target: todoTable.id,
-      });
+    await this.getExecutor(ctx).delete(todoTable).where(eq(todoTable.id, todoId));
   }
 
   private getExecutor(ctx?: TransactionContext): DrizzleExecutor {
