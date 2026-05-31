@@ -1,0 +1,4 @@
+interface:
+  display_name: "TSDoc"
+  short_description: "Write consistent TypeScript doc comments"
+  default_prompt: "Use $tsdoc to write or review TypeScript Doc Comments."
