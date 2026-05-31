@@ -3,12 +3,12 @@ import { z } from "zod";
 export const TodoStatusSchema = z.enum(["not_started", "in_progress", "completed"]);
 
 export const TodoSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().min(1).max(100),
+  description: z.string().max(1000).nullable(),
+  status: TodoStatusSchema,
   completedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
-  description: z.string().max(1000).nullable(),
-  id: z.string().uuid(),
-  status: TodoStatusSchema,
-  title: z.string().min(1).max(100),
   updatedAt: z.string().datetime(),
 });
 

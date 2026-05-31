@@ -28,5 +28,10 @@ export async function createOpenAPISpec(options: CreateOpenAPISpecOptions = {}) 
         url: "http://localhost:3000",
       },
     ],
+    tags: [
+      {
+        name: "Todo",
+      },
+    ],
   });
 }

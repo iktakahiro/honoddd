@@ -9,59 +9,34 @@ import {
   UpdateTodoInputSchema,
 } from "./schemas";
 
+const todoTags = ["Todo"];
+
 export const contract = {
   todo: {
-    complete: oc
-      .route({
-        method: "POST",
-        path: "/todos/{id}/complete",
-        successStatus: 200,
-        tags: ["todos"],
-      })
-      .input(TodoIdInputSchema)
-      .output(TodoSchema),
     create: oc
       .route({
         method: "POST",
         path: "/todos",
         successStatus: 201,
-        tags: ["todos"],
+        tags: todoTags,
       })
       .input(CreateTodoInputSchema)
-      .output(TodoSchema),
-    findById: oc
-      .route({
-        method: "GET",
-        path: "/todos/{id}",
-        successStatus: 200,
-        tags: ["todos"],
-      })
-      .input(TodoIdInputSchema)
       .output(TodoSchema),
     list: oc
       .route({
         method: "GET",
         path: "/todos",
         successStatus: 200,
-        tags: ["todos"],
+        tags: todoTags,
       })
       .input(FindTodosInputSchema)
       .output(FindTodosOutputSchema),
-    remove: oc
+    findById: oc
       .route({
-        method: "DELETE",
+        method: "GET",
         path: "/todos/{id}",
         successStatus: 200,
-        tags: ["todos"],
-      })
-      .input(TodoIdInputSchema)
-      .output(TodoIdInputSchema),
-    start: oc
-      .route({
-        method: "POST",
-        path: "/todos/{id}/start",
-        successStatus: 200,
-        tags: ["todos"],
+        tags: todoTags,
       })
       .input(TodoIdInputSchema)
       .output(TodoSchema),
@@ -70,9 +45,36 @@ export const contract = {
         method: "PATCH",
         path: "/todos/{id}",
         successStatus: 200,
-        tags: ["todos"],
+        tags: todoTags,
       })
       .input(UpdateTodoInputSchema)
+      .output(TodoSchema),
+    remove: oc
+      .route({
+        method: "DELETE",
+        path: "/todos/{id}",
+        successStatus: 200,
+        tags: todoTags,
+      })
+      .input(TodoIdInputSchema)
+      .output(TodoIdInputSchema),
+    start: oc
+      .route({
+        method: "POST",
+        path: "/todos/{id}/start",
+        successStatus: 200,
+        tags: todoTags,
+      })
+      .input(TodoIdInputSchema)
+      .output(TodoSchema),
+    complete: oc
+      .route({
+        method: "POST",
+        path: "/todos/{id}/complete",
+        successStatus: 200,
+        tags: todoTags,
+      })
+      .input(TodoIdInputSchema)
       .output(TodoSchema),
   },
 };

@@ -2,6 +2,11 @@ import { createOpenAPISpec } from "@honoddd/contract";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 
+type ScalarOperation = {
+  method?: string;
+  path?: string;
+};
+
 export function createApp() {
   const app = new Hono();
 
@@ -28,7 +33,36 @@ export function createApp() {
   app.get(
     "/",
     Scalar({
+      operationsSorter: (a: ScalarOperation, b: ScalarOperation) => {
+        const operationOrder = [
+          "POST /todos",
+          "GET /todos",
+          "GET /todos/{id}",
+          "PATCH /todos/{id}",
+          "DELETE /todos/{id}",
+          "POST /todos/{id}/start",
+          "POST /todos/{id}/complete",
+        ];
+
+        const getKey = (operation: ScalarOperation) =>
+          `${operation.method?.toUpperCase() ?? ""} ${operation.path ?? ""}`;
+        const getOrder = (operation: ScalarOperation) => {
+          const index = operationOrder.indexOf(getKey(operation));
+
+          return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+        };
+
+        const order = getOrder(a) - getOrder(b);
+
+        if (order !== 0) {
+          return order;
+        }
+
+        return getKey(a).localeCompare(getKey(b));
+      },
+      orderSchemaPropertiesBy: "preserve",
       pageTitle: "Hono DDD API Reference",
+      tagsSorter: "alpha",
       theme: "default",
       url: "/openapi.json",
     }),
