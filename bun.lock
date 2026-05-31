@@ -5,13 +5,13 @@
     "": {
       "name": "honoddd",
       "devDependencies": {
-        "@types/bun": "latest",
-        "bun-types": "latest",
-        "npm-check-updates": "latest",
-        "oxfmt": "latest",
-        "oxlint": "latest",
-        "turbo": "latest",
-        "typescript": "latest",
+        "@types/bun": "1.3.14",
+        "bun-types": "1.3.14",
+        "npm-check-updates": "22.2.0",
+        "oxfmt": "0.51.0",
+        "oxlint": "1.66.0",
+        "turbo": "2.9.14",
+        "typescript": "6.0.3",
       },
     },
     "apps/api-doc": {
@@ -19,8 +19,11 @@
       "version": "0.0.0",
       "dependencies": {
         "@honoddd/contract": "workspace:*",
-        "@scalar/hono-api-reference": "latest",
-        "hono": "latest",
+        "@scalar/hono-api-reference": "0.10.19",
+        "hono": "4.12.22",
+      },
+      "devDependencies": {
+        "@honoddd/typescript-config": "workspace:*",
       },
     },
     "apps/backend": {
@@ -28,22 +31,32 @@
       "version": "0.0.0",
       "dependencies": {
         "@honoddd/contract": "workspace:*",
-        "@orpc/openapi": "latest",
-        "@orpc/server": "latest",
-        "@orpc/zod": "latest",
-        "hono": "latest",
-        "zod": "latest",
+        "@orpc/openapi": "1.14.3",
+        "@orpc/server": "1.14.3",
+        "@orpc/zod": "1.14.3",
+        "hono": "4.12.22",
+        "zod": "4.4.3",
+      },
+      "devDependencies": {
+        "@honoddd/typescript-config": "workspace:*",
       },
     },
     "packages/contract": {
       "name": "@honoddd/contract",
       "version": "0.0.0",
       "dependencies": {
-        "@orpc/contract": "latest",
-        "@orpc/openapi": "latest",
-        "@orpc/zod": "latest",
-        "zod": "latest",
+        "@orpc/contract": "1.14.3",
+        "@orpc/openapi": "1.14.3",
+        "@orpc/zod": "1.14.3",
+        "zod": "4.4.3",
       },
+      "devDependencies": {
+        "@honoddd/typescript-config": "workspace:*",
+      },
+    },
+    "packages/typescript-config": {
+      "name": "@honoddd/typescript-config",
+      "version": "0.0.0",
     },
   },
   "packages": {
@@ -52,6 +65,8 @@
     "@honoddd/backend": ["@honoddd/backend@workspace:apps/backend"],
 
     "@honoddd/contract": ["@honoddd/contract@workspace:packages/contract"],
+
+    "@honoddd/typescript-config": ["@honoddd/typescript-config@workspace:packages/typescript-config"],
 
     "@orpc/client": ["@orpc/client@1.14.3", "", { "dependencies": { "@orpc/shared": "1.14.3", "@orpc/standard-server": "1.14.3", "@orpc/standard-server-fetch": "1.14.3", "@orpc/standard-server-peer": "1.14.3" } }, "sha512-0HzeD/BgPctvFnd6ltjuQvx4/POXo0K01Tee/3whAm3ohXnlGqCfhzR2VMN8zBaGs1SYe6AFzjmGG928Ej3pAg=="],
 

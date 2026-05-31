@@ -1,0 +1,16 @@
+{
+  "name": "@honoddd/typescript-config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base.json": "./base.json"
+  },
+  "scripts": {
+    "build": "bun --eval \"const fs = await import('node:fs/promises'); await fs.mkdir('dist', { recursive: true }); await fs.copyFile('base.json', 'dist/base.json');\"",
+    "test": "bun --eval \"undefined\"",
+    "type-check": "bun --eval \"undefined\"",
+    "typecheck": "bun run type-check",
+    "check": "bun run type-check && bun run test"
+  }
+}

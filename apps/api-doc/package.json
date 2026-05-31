@@ -8,11 +8,16 @@
     "dev": "bun --hot src/index.ts",
     "start": "bun src/index.ts",
     "test": "bun test",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "bun run type-check",
+    "check": "bun run type-check && bun run test"
   },
   "dependencies": {
     "@honoddd/contract": "workspace:*",
-    "@scalar/hono-api-reference": "latest",
-    "hono": "latest"
+    "@scalar/hono-api-reference": "0.10.19",
+    "hono": "4.12.22"
+  },
+  "devDependencies": {
+    "@honoddd/typescript-config": "workspace:*"
   }
 }

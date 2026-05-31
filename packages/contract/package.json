@@ -12,12 +12,17 @@
   "scripts": {
     "build": "bun build ./src/index.ts --target bun --outdir dist --external @orpc/contract --external @orpc/openapi --external @orpc/zod --external zod",
     "test": "bun test",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "bun run type-check",
+    "check": "bun run type-check && bun run test"
   },
   "dependencies": {
-    "@orpc/contract": "latest",
-    "@orpc/openapi": "latest",
-    "@orpc/zod": "latest",
-    "zod": "latest"
+    "@orpc/contract": "1.14.3",
+    "@orpc/openapi": "1.14.3",
+    "@orpc/zod": "1.14.3",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@honoddd/typescript-config": "workspace:*"
   }
 }
