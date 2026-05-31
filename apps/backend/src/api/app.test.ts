@@ -13,6 +13,7 @@ describe("backend app", () => {
     });
     const app = createApp({
       container,
+      requestLogger: false,
     });
 
     try {
@@ -33,6 +34,31 @@ describe("backend app", () => {
       expect(preflightResponse.headers.get("access-control-allow-headers")).toContain(
         "Content-Type",
       );
+      expect(preflightResponse.headers.get("x-request-id")).toBeString();
+    } finally {
+      await container.dispose();
+    }
+  });
+
+  it("returns the request id used by API clients", async () => {
+    const db = createDrizzleDatabase(new PGlite());
+    const container = createAppContainer({
+      db,
+    });
+    const app = createApp({
+      container,
+      requestLogger: false,
+    });
+
+    try {
+      const response = await app.request("/health", {
+        headers: {
+          "x-request-id": "api-doc-test-request",
+        },
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("x-request-id")).toBe("api-doc-test-request");
     } finally {
       await container.dispose();
     }
@@ -45,6 +71,7 @@ describe("backend app", () => {
     });
     const app = createApp({
       container,
+      requestLogger: false,
     });
 
     try {
