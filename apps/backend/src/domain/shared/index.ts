@@ -2,3 +2,4 @@ export { DomainException, EntityNotFoundException, ValidationException } from ".
 export { Entity } from "./entity";
 export type { Brand, EntityId, EntityIdValue } from "./entity-id";
 export { assertUuid, makeIdVO } from "./entity-id";
+export type { TransactionContext, TransactionManager } from "./transaction";

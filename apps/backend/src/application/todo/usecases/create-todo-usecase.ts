@@ -1,3 +1,4 @@
+import type { TransactionManager } from "../../../domain/shared";
 import { Todo } from "../../../domain/todo/entities/todo";
 import type { TodoRepository } from "../../../domain/todo/repositories/todo-repository";
 import { TodoDescription } from "../../../domain/todo/value-objects/todo-description";
@@ -9,7 +10,10 @@ export type CreateTodoUseCaseInput = {
 };
 
 export class CreateTodoUseCase {
-  constructor(private readonly todoRepository: TodoRepository) {}
+  constructor(
+    private readonly todoRepository: TodoRepository,
+    private readonly transactionManager: TransactionManager,
+  ) {}
 
   async execute(input: CreateTodoUseCaseInput): Promise<Todo> {
     const todo = Todo.create({
@@ -20,7 +24,7 @@ export class CreateTodoUseCase {
       title: TodoTitle.create(input.title),
     });
 
-    await this.todoRepository.save(todo);
+    await this.transactionManager.runInTransaction((ctx) => this.todoRepository.save(todo, ctx));
 
     return todo;
   }

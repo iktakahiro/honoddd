@@ -1,19 +1,25 @@
+import { EntityNotFoundException, type TransactionManager } from "../../../domain/shared";
 import type { Todo } from "../../../domain/todo/entities/todo";
 import type { TodoRepository } from "../../../domain/todo/repositories/todo-repository";
 import { TodoId } from "../../../domain/todo/value-objects/todo-id";
-import { EntityNotFoundException } from "../../../domain/shared";
 
 export class FindTodoUseCase {
-  constructor(private readonly todoRepository: TodoRepository) {}
+  constructor(
+    private readonly todoRepository: TodoRepository,
+    private readonly transactionManager: TransactionManager,
+  ) {}
 
   async execute(id: string): Promise<Todo> {
     const todoId = TodoId.parse(id);
-    const todo = await this.todoRepository.findById(todoId);
 
-    if (todo === null) {
-      throw new EntityNotFoundException("Todo", id);
-    }
+    return this.transactionManager.runInTransaction(async (ctx) => {
+      const todo = await this.todoRepository.findById(todoId, ctx);
 
-    return todo;
+      if (todo === null) {
+        throw new EntityNotFoundException("Todo", id);
+      }
+
+      return todo;
+    });
   }
 }

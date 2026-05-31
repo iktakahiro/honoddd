@@ -13,10 +13,12 @@
     "check": "bun run type-check && bun run test"
   },
   "dependencies": {
+    "@electric-sql/pglite": "0.4.5",
     "@honoddd/contract": "workspace:*",
     "@orpc/openapi": "1.14.3",
     "@orpc/server": "1.14.3",
     "@orpc/zod": "1.14.3",
+    "drizzle-orm": "0.45.2",
     "hono": "4.12.22",
     "zod": "4.4.3"
   },

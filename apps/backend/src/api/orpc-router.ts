@@ -8,19 +8,26 @@ import { FindTodoUseCase } from "../application/todo/usecases/find-todo-usecase"
 import { ListTodosUseCase } from "../application/todo/usecases/list-todos-usecase";
 import { StartTodoUseCase } from "../application/todo/usecases/start-todo-usecase";
 import { UpdateTodoUseCase } from "../application/todo/usecases/update-todo-usecase";
-import { DomainException, EntityNotFoundException } from "../domain/shared";
+import {
+  DomainException,
+  EntityNotFoundException,
+  type TransactionManager,
+} from "../domain/shared";
 import type { TodoRepository } from "../domain/todo/repositories/todo-repository";
 import { presentTodo } from "./todo-presenter";
 
-export function createORPCRouter(todoRepository: TodoRepository) {
+export function createORPCRouter(
+  todoRepository: TodoRepository,
+  transactionManager: TransactionManager,
+) {
   const os = implement(contract);
-  const completeTodoUseCase = new CompleteTodoUseCase(todoRepository);
-  const createTodoUseCase = new CreateTodoUseCase(todoRepository);
-  const deleteTodoUseCase = new DeleteTodoUseCase(todoRepository);
-  const findTodoUseCase = new FindTodoUseCase(todoRepository);
-  const listTodosUseCase = new ListTodosUseCase(todoRepository);
-  const startTodoUseCase = new StartTodoUseCase(todoRepository);
-  const updateTodoUseCase = new UpdateTodoUseCase(todoRepository);
+  const completeTodoUseCase = new CompleteTodoUseCase(todoRepository, transactionManager);
+  const createTodoUseCase = new CreateTodoUseCase(todoRepository, transactionManager);
+  const deleteTodoUseCase = new DeleteTodoUseCase(todoRepository, transactionManager);
+  const findTodoUseCase = new FindTodoUseCase(todoRepository, transactionManager);
+  const listTodosUseCase = new ListTodosUseCase(todoRepository, transactionManager);
+  const startTodoUseCase = new StartTodoUseCase(todoRepository, transactionManager);
+  const updateTodoUseCase = new UpdateTodoUseCase(todoRepository, transactionManager);
 
   return os.router({
     todo: {
