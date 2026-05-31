@@ -15,6 +15,13 @@ import { getDrizzleTransaction } from "../../drizzle-transaction";
 import { todoTable } from "../../schemas/todo-schema";
 import { toTodo, toTodoTableInsert, toTodoTableUpdate } from "./todo-mapper";
 
+/**
+ * Drizzle implementation of {@link TodoRepository}.
+ *
+ * @remarks
+ * The repository waits for schema migration readiness before executing database
+ * operations and uses {@link TransactionContext} when provided.
+ */
 export class DrizzleTodoRepository implements TodoRepository {
   private readonly ready: Promise<void>;
 
@@ -25,17 +32,26 @@ export class DrizzleTodoRepository implements TodoRepository {
     this.ready = ready;
   }
 
+  /**
+   * Closes the underlying PGlite client.
+   */
   async close(): Promise<void> {
     await this.ready;
     await this.db.$client.close();
   }
 
+  /**
+   * {@link TodoRepository.create}
+   */
   async create(todo: Todo, ctx?: TransactionContext): Promise<void> {
     await this.ready;
 
     await this.getExecutor(ctx).insert(todoTable).values(toTodoTableInsert(todo));
   }
 
+  /**
+   * {@link TodoRepository.update}
+   */
   async update(todo: Todo, ctx?: TransactionContext): Promise<void> {
     await this.ready;
 
@@ -45,6 +61,9 @@ export class DrizzleTodoRepository implements TodoRepository {
       .where(eq(todoTable.id, todo.id));
   }
 
+  /**
+   * {@link TodoRepository.findById}
+   */
   async findById(todoId: TodoId, ctx?: TransactionContext): Promise<Todo | null> {
     await this.ready;
 
@@ -57,6 +76,9 @@ export class DrizzleTodoRepository implements TodoRepository {
     return row === undefined ? null : toTodo(row);
   }
 
+  /**
+   * {@link TodoRepository.list}
+   */
   async list(filter: { status?: TodoStatus } = {}, ctx?: TransactionContext): Promise<Todo[]> {
     await this.ready;
     const db = this.getExecutor(ctx);
@@ -73,12 +95,18 @@ export class DrizzleTodoRepository implements TodoRepository {
     return rows.map(toTodo);
   }
 
+  /**
+   * {@link TodoRepository.delete}
+   */
   async delete(todoId: TodoId, ctx?: TransactionContext): Promise<void> {
     await this.ready;
 
     await this.getExecutor(ctx).delete(todoTable).where(eq(todoTable.id, todoId));
   }
 
+  /**
+   * Selects either the root database or the transaction-bound executor.
+   */
   private getExecutor(ctx?: TransactionContext): DrizzleExecutor {
     return ctx === undefined ? this.db : getDrizzleTransaction(ctx);
   }

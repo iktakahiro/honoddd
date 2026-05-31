@@ -4,6 +4,9 @@ import { TodoId } from "../value-objects/todo-id";
 import { TodoStatus } from "../value-objects/todo-status";
 import { TodoTitle } from "../value-objects/todo-title";
 
+/**
+ * Serializable state required to reconstruct a Todo aggregate.
+ */
 export type TodoSnapshot = {
   completedAt: Date | null;
   createdAt: Date;
@@ -14,6 +17,13 @@ export type TodoSnapshot = {
   updatedAt: Date;
 };
 
+/**
+ * Todo aggregate root that owns lifecycle transitions.
+ *
+ * @remarks
+ * The aggregate keeps status transitions inside the domain model so use cases
+ * do not duplicate lifecycle rules.
+ */
 export class Todo extends Entity<TodoId> {
   private completedAtValue: Date | null;
   private descriptionValue: TodoDescription | null;
@@ -36,6 +46,13 @@ export class Todo extends Entity<TodoId> {
     this.completedAtValue = completedAt;
   }
 
+  /**
+   * Creates a new Todo in the not-started state.
+   *
+   * @param input - Initial Todo values.
+   *
+   * @returns Newly created Todo aggregate.
+   */
   static create(input: {
     description?: TodoDescription | null;
     id?: TodoId;
@@ -55,6 +72,13 @@ export class Todo extends Entity<TodoId> {
     );
   }
 
+  /**
+   * Reconstructs a Todo from persisted state.
+   *
+   * @param snapshot - Persisted Todo state.
+   *
+   * @returns Rehydrated Todo aggregate.
+   */
   static restore(snapshot: TodoSnapshot): Todo {
     return new Todo(
       snapshot.id,
@@ -83,6 +107,14 @@ export class Todo extends Entity<TodoId> {
     return this.titleValue;
   }
 
+  /**
+   * Marks the Todo as completed.
+   *
+   * @remarks
+   * Completing a Todo records `completedAt` and updates `updatedAt`.
+   *
+   * @throws {DomainException} When the Todo is not in progress.
+   */
   complete(now = new Date()): void {
     if (this.statusValue === TodoStatus.Completed) {
       return;
@@ -97,6 +129,11 @@ export class Todo extends Entity<TodoId> {
     this.touch(now);
   }
 
+  /**
+   * Returns the current aggregate state for persistence.
+   *
+   * @returns Snapshot containing every persisted Todo field.
+   */
   snapshot(): TodoSnapshot {
     return {
       completedAt: this.completedAtValue,
@@ -109,6 +146,11 @@ export class Todo extends Entity<TodoId> {
     };
   }
 
+  /**
+   * Marks the Todo as in progress.
+   *
+   * @throws {DomainException} When the Todo has already been completed.
+   */
   start(now = new Date()): void {
     if (this.statusValue === TodoStatus.InProgress) {
       return;
@@ -122,6 +164,13 @@ export class Todo extends Entity<TodoId> {
     this.touch(now);
   }
 
+  /**
+   * Updates editable Todo fields.
+   *
+   * @remarks
+   * Passing `undefined` leaves a field unchanged, while `null` clears the
+   * description.
+   */
   update(input: { description?: TodoDescription | null; now?: Date; title?: TodoTitle }): void {
     if (input.title !== undefined) {
       this.titleValue = input.title;

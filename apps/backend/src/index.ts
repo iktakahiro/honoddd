@@ -19,6 +19,9 @@ const keepAliveInterval = setInterval(() => {}, 1_000_000_000);
 
 console.log(`Backend API listening on http://localhost:${port}`);
 
+/**
+ * Stops the HTTP server and disposes long-lived infrastructure resources.
+ */
 async function shutdown(): Promise<void> {
   clearInterval(keepAliveInterval);
   server.stop(true);

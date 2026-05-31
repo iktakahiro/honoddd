@@ -13,6 +13,9 @@ import {
 import { DrizzleTransactionManager } from "../infrastructure/psql/drizzle/drizzle-transaction";
 import { DrizzleTodoRepository } from "../infrastructure/psql/drizzle/todo/repositories/drizzle-todo-repository";
 
+/**
+ * Use case instances exposed by the application container.
+ */
 export type TodoUseCases = {
   completeTodo: CompleteTodoUseCase;
   createTodo: CreateTodoUseCase;
@@ -23,16 +26,33 @@ export type TodoUseCases = {
   updateTodo: UpdateTodoUseCase;
 };
 
+/**
+ * Runtime application container for backend dependencies.
+ */
 export type AppContainer = {
   dispose(): Promise<void>;
   todoUseCases: TodoUseCases;
 };
 
+/**
+ * Options for constructing the application container.
+ */
 export type AppContainerOptions = {
   db?: DrizzleDatabase;
   ready?: Promise<void>;
 };
 
+/**
+ * Creates the backend application container.
+ *
+ * @remarks
+ * This is the composition root for concrete infrastructure dependencies used
+ * by API handlers.
+ *
+ * @param options - Optional infrastructure overrides for tests or custom runtimes.
+ *
+ * @returns Application container with use cases and lifecycle cleanup.
+ */
 export function createAppContainer(options: AppContainerOptions = {}): AppContainer {
   const db = options.db ?? createDrizzleDatabase();
   const ready = options.ready ?? migrateDrizzleSchema(db);

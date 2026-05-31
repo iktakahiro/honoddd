@@ -3,6 +3,9 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 
 import { contract } from "./contract";
 
+/**
+ * Options for generating the OpenAPI document.
+ */
 export type CreateOpenAPISpecOptions = {
   servers?: Array<{
     description?: string;
@@ -10,6 +13,13 @@ export type CreateOpenAPISpecOptions = {
   }>;
 };
 
+/**
+ * Generates an OpenAPI document from the shared oRPC contract.
+ *
+ * @param options - Optional OpenAPI generation settings.
+ *
+ * @returns OpenAPI document for the Todo API.
+ */
 export async function createOpenAPISpec(options: CreateOpenAPISpecOptions = {}) {
   const generator = new OpenAPIGenerator({
     schemaConverters: [new ZodToJsonSchemaConverter()],

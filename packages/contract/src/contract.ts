@@ -11,6 +11,9 @@ import {
 
 const todoTags = ["Todo"];
 
+/**
+ * Shared oRPC contract for the Todo REST API.
+ */
 export const contract = {
   todo: {
     create: oc
@@ -79,4 +82,7 @@ export const contract = {
   },
 };
 
+/**
+ * Type of the shared application contract.
+ */
 export type AppContract = typeof contract;

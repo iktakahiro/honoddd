@@ -13,14 +13,31 @@ import { createORPCRouter } from "./orpc-router";
 
 const defaultCorsOrigins = ["http://localhost:3001", "http://127.0.0.1:3001"];
 
+/**
+ * Request log sink accepted by the Hono logger middleware.
+ */
 type RequestLogger = (message: string, ...rest: string[]) => void;
 
+/**
+ * Dependencies and adapter options for constructing the backend Hono app.
+ */
 export type AppDependencies = {
   container: AppContainer;
   corsOrigins?: string[];
   requestLogger?: RequestLogger | false;
 };
 
+/**
+ * Creates the backend Hono application.
+ *
+ * @remarks
+ * The app installs request IDs, logging, CORS, compression, and the oRPC
+ * OpenAPI handler that delegates to application use cases.
+ *
+ * @param dependencies - Application container and adapter options.
+ *
+ * @returns Configured Hono application.
+ */
 export function createApp(dependencies: AppDependencies) {
   const app = new Hono<{
     Variables: RequestIdVariables;

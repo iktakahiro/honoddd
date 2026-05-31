@@ -2,11 +2,23 @@ import { createOpenAPISpec } from "@honoddd/contract";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 
+/**
+ * Operation shape passed to Scalar operation sorters.
+ */
 type ScalarOperation = {
   method?: string;
   path?: string;
 };
 
+/**
+ * Creates the API documentation Hono application.
+ *
+ * @remarks
+ * The application serves the generated OpenAPI document and Scalar API
+ * reference UI.
+ *
+ * @returns Configured API documentation app.
+ */
 export function createApp() {
   const app = new Hono();
 

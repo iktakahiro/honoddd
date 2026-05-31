@@ -1,8 +1,20 @@
 import { ValidationException } from "../../shared";
 
+/**
+ * Validated Todo description value object.
+ */
 export class TodoDescription {
   private constructor(readonly value: string) {}
 
+  /**
+   * Creates a normalized Todo description.
+   *
+   * @param value - Raw description value.
+   *
+   * @returns Validated description value object.
+   *
+   * @throws {ValidationException} When the description is too long.
+   */
   static create(value: string): TodoDescription {
     const normalized = value.trim();
 

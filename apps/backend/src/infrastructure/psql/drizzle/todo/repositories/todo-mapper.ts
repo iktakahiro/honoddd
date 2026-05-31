@@ -4,11 +4,21 @@ import { TodoId } from "../../../../../domain/todo/value-objects/todo-id";
 import { TodoTitle } from "../../../../../domain/todo/value-objects/todo-title";
 import type { TodoTableInsert, TodoTableRow } from "../../schemas/todo-schema";
 
+/**
+ * Update row shape for Todo fields that can change after creation.
+ */
 export type TodoTableUpdate = Pick<
   TodoTableInsert,
   "completedAt" | "description" | "status" | "title" | "updatedAt"
 >;
 
+/**
+ * Converts a Drizzle Todo row into a domain aggregate.
+ *
+ * @param row - Drizzle row from the `todos` table.
+ *
+ * @returns Rehydrated Todo aggregate.
+ */
 export function toTodo(row: TodoTableRow): Todo {
   return Todo.restore({
     completedAt: row.completedAt,
@@ -21,6 +31,13 @@ export function toTodo(row: TodoTableRow): Todo {
   });
 }
 
+/**
+ * Converts a Todo aggregate into an insert row.
+ *
+ * @param todo - Todo aggregate to persist.
+ *
+ * @returns Drizzle insert row.
+ */
 export function toTodoTableInsert(todo: Todo): TodoTableInsert {
   const snapshot = todo.snapshot();
 
@@ -35,6 +52,13 @@ export function toTodoTableInsert(todo: Todo): TodoTableInsert {
   };
 }
 
+/**
+ * Converts a Todo aggregate into an update row.
+ *
+ * @param todo - Todo aggregate to update.
+ *
+ * @returns Drizzle update row.
+ */
 export function toTodoTableUpdate(todo: Todo): TodoTableUpdate {
   const snapshot = todo.snapshot();
 

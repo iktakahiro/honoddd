@@ -5,6 +5,11 @@ import { DomainException, EntityNotFoundException } from "../domain/shared";
 import type { ORPCContext } from "./orpc-context";
 import { presentTodo } from "./todo-presenter";
 
+/**
+ * Creates the oRPC router implementation for the shared contract.
+ *
+ * @returns oRPC router bound to application use cases.
+ */
 export function createORPCRouter() {
   const os = implement(contract).$context<ORPCContext>();
 
@@ -55,6 +60,13 @@ export function createORPCRouter() {
   });
 }
 
+/**
+ * Maps application and domain exceptions to oRPC errors.
+ *
+ * @param operation - Handler operation to execute.
+ *
+ * @returns Operation result when no known application error is thrown.
+ */
 async function mapApplicationErrors<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation();

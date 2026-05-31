@@ -1,3 +1,10 @@
+/**
+ * Base class for domain entities identified by a stable ID.
+ *
+ * @remarks
+ * Equality is based on concrete entity type and identifier, not object
+ * reference or mutable state.
+ */
 export abstract class Entity<TId> {
   protected readonly _createdAt: Date;
   protected readonly _id: TId;
