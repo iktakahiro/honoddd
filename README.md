@@ -6,8 +6,6 @@ English | [日本語](README.ja_JP.md)
 
 **NOTE**: This repository demonstrates how to structure a small web API with DDD and Onion Architecture. Before adapting it to production, add authentication, authorization, observability, migration management, and operational security for your own environment.
 
-This project is inspired by [iktakahiro/dddpy](https://github.com/iktakahiro/dddpy) and translates the same architectural ideas into a Bun, Hono, oRPC, TypeScript, Drizzle, and PGlite stack.
-
 ## Tech Stack
 
 - [Bun](https://bun.sh/) for runtime, package management, and tests
@@ -53,6 +51,7 @@ bun run validate
 
 The backend defaults to `http://localhost:3000`.
 The API docs default to `http://localhost:3001`.
+The backend stores local PGlite data in `apps/backend/.pglite` by default. Set `PGLITE_DATA_DIR` to use another data directory, or pass an explicit `new PGlite()` in tests for in-memory databases.
 
 ## Workspace
 
@@ -76,6 +75,7 @@ The backend follows Onion Architecture. Inner layers describe business concepts 
 |       `-- src
 |           |-- api
 |           |   |-- app.ts
+|           |   |-- orpc-context.ts
 |           |   |-- orpc-router.ts
 |           |   `-- todo-presenter.ts
 |           |-- application
@@ -94,15 +94,20 @@ The backend follows Onion Architecture. Inner layers describe business concepts 
 |           |       |-- entities
 |           |       |-- repositories
 |           |       `-- value-objects
+|           |-- bootstrap
+|           |   `-- app-container.ts
 |           |-- infrastructure
-|           |   `-- drizzle
-|           |       |-- drizzle-database.ts
-|           |       |-- drizzle-transaction.ts
-|           |       `-- todo
-|           |           |-- todo-schema.ts
-|           |           `-- repositories
-|           |               |-- drizzle-todo-repository.ts
-|           |               `-- todo-mapper.ts
+|           |   `-- psql
+|           |       |-- drizzle
+|           |       |   |-- drizzle-database.ts
+|           |       |   |-- drizzle-transaction.ts
+|           |       |   |-- schemas
+|           |       |   |   `-- todo-schema.ts
+|           |       |   `-- todo
+|           |       |       `-- repositories
+|           |       |           |-- drizzle-todo-repository.ts
+|           |       |           `-- todo-mapper.ts
+|           |       `-- migrations
 |           `-- index.ts
 |-- packages
 |   |-- contract
@@ -164,11 +169,15 @@ The contract package defines API routes, request schemas, response schemas, and 
 
 The API layer uses Hono and oRPC to translate HTTP requests into use case calls.
 
-**What**: `apps/backend/src/api/app.ts` constructs the Hono app and receives the repository dependency from the composition root.
+**What**: `apps/backend/src/bootstrap/app-container.ts` constructs the application container. It owns the concrete Drizzle repository, transaction manager, and use case instances.
 
-**Why**: The API layer stays thin. It does not decide how todos are persisted, and tests can create the app with an explicit repository.
+**Why**: Object construction is a composition concern. Keeping it in one container keeps repository lifecycle, migration readiness, and shutdown behavior out of handlers and use cases.
 
-**What**: `orpc-router.ts` maps contract handlers to use cases and translates domain exceptions into oRPC errors.
+**What**: `apps/backend/src/api/app.ts` constructs the Hono app and passes an oRPC context containing the app container and request-scoped values.
+
+**Why**: Hono remains the HTTP adapter, while oRPC receives the context that its handlers actually use. Request-scoped values such as request IDs or future authentication context can be added without changing use case constructors.
+
+**What**: `orpc-router.ts` maps contract handlers to use cases through `context.container.todoUseCases` and translates domain exceptions into oRPC errors.
 
 **Why**: Error mapping is an adapter concern. Domain and application code can throw meaningful exceptions without depending on HTTP status codes or response formats.
 
@@ -184,9 +193,13 @@ The infrastructure layer contains Drizzle, PGlite, schema definitions, and mappe
 
 **Why**: Use cases can express transactional intent without importing Drizzle types. Repository implementations can still recover the concrete Drizzle transaction from the context when they need to execute SQL.
 
-**What**: `todo-schema.ts` defines the database table, and `todo-mapper.ts` converts between Drizzle rows and the `Todo` entity.
+**What**: Drizzle schema files live flat under `src/infrastructure/psql/drizzle/schemas`, generated SQL migrations live under `src/infrastructure/psql/migrations`, and `todo-mapper.ts` converts between Drizzle rows and the `Todo` entity.
 
 **Why**: Database rows are not domain objects. Explicit mappers prevent column names, nullable database fields, and ORM types from leaking into use cases.
+
+**What**: PGlite initialization runs the generated Drizzle migrations through `drizzle-orm/pglite/migrator`.
+
+**Why**: PGlite behaves like a PostgreSQL-compatible database, so keeping SQL migrations as the source of initialization makes local embedded storage and future PostgreSQL deployment follow the same schema history.
 
 ### API Documentation
 
@@ -312,11 +325,28 @@ Run format check:
 bun run format
 ```
 
+Generate a Drizzle migration after editing schema files:
+
+```sh
+bun --cwd apps/backend run db:generate
+```
+
+Apply migrations to a local PGlite data directory:
+
+```sh
+PGLITE_DATA_DIR=./.pglite bun --cwd apps/backend run db:migrate
+```
+
 Apply automatic fixes:
 
 ```sh
 bun run fix
 ```
+
+## Related Repositories
+
+- [iktakahiro/dddpy](https://github.com/iktakahiro/dddpy): Python DDD & Onion Architecture example
+- [iktakahiro/oniongo](https://github.com/iktakahiro/oniongo): Go DDD & Onion Architecture example
 
 ## License
 
