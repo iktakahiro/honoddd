@@ -31,15 +31,16 @@ Install dependencies:
 bun install
 ```
 
-Run the backend API:
+Start all development apps:
+
+```sh
+bun run dev
+```
+
+This starts the backend API and the API documentation app together. If you need to run them separately:
 
 ```sh
 bun run dev:backend
-```
-
-Run the API documentation app:
-
-```sh
 bun run dev:api-doc
 ```
 
@@ -123,127 +124,513 @@ The backend follows Onion Architecture. Inner layers describe business concepts 
 
 ### Domain Layer
 
-The domain layer contains entities, value objects, domain exceptions, and repository interfaces.
+The domain layer contains entities, value objects, domain exceptions, and repository interfaces. It does not import Hono, oRPC, Drizzle, PGlite, or HTTP-specific types.
 
-**What**: `Todo` is modeled as an entity with a unique `TodoId`, lifecycle state, and behavior such as `start` and `complete`.
+#### Entity
 
-**Why**: Entity methods keep lifecycle rules near the data they protect. A use case can ask the entity to change state instead of spreading status transition rules across HTTP handlers or repositories.
+`Todo` is modeled as an aggregate root. It owns its identifier, state, lifecycle transitions, and persisted snapshot.
 
-**What**: Single-value identifiers use branded types created by `makeIdVO`, and value objects such as `TodoTitle` and `TodoDescription` validate their own constraints.
+```ts
+export class Todo extends Entity<TodoId> {
+  static create(input: {
+    description?: TodoDescription | null;
+    id?: TodoId;
+    now?: Date;
+    title: TodoTitle;
+  }): Todo {
+    const now = input.now ?? new Date();
 
-**Why**: Branded IDs make it harder to accidentally pass an arbitrary string where a domain ID is expected. Value objects also make validation reusable and explicit at the domain boundary.
+    return new Todo(
+      input.id ?? TodoId.generate(),
+      input.title,
+      input.description ?? null,
+      TodoStatus.NotStarted,
+      now,
+      now,
+      null,
+    );
+  }
 
-**What**: `TodoRepository` is defined in the domain layer, while its concrete Drizzle implementation lives in infrastructure.
+  start(now = new Date()): void {
+    if (this.statusValue === TodoStatus.InProgress) {
+      return;
+    }
 
-**Why**: Use cases depend on the capability to persist todos, not on Drizzle, PGlite, SQL, or a particular table shape. This keeps the dependency direction pointing inward.
+    if (this.statusValue === TodoStatus.Completed) {
+      throw new DomainException("Completed todos cannot be restarted");
+    }
+
+    this.statusValue = TodoStatus.InProgress;
+    this.touch(now);
+  }
+}
+```
+
+> [!TIP]
+> Keep lifecycle rules on the entity that owns the lifecycle. HTTP handlers and repositories should not duplicate status transition rules.
+
+#### Value Objects
+
+Single-value identifiers use branded types created by `makeIdVO`. Other value objects, such as `TodoTitle` and `TodoDescription`, validate and normalize their own values.
+
+```ts
+export type TodoId = Brand<EntityIdValue, "TodoId">;
+export const TodoId = makeIdVO("TodoId");
+
+export const makeIdVO = <B extends string>(label: B) => {
+  type Id = Brand<EntityIdValue, B>;
+
+  return {
+    parse(input: unknown): Id {
+      if (typeof input !== "string") {
+        throw new ValidationException(`${label} must be a string`);
+      }
+
+      return assertUuid(input, label) as Id;
+    },
+    generate(): Id {
+      return assertUuid(crypto.randomUUID(), label) as Id;
+    },
+  } as const;
+};
+```
+
+> [!TIP]
+> Branded IDs reduce the risk of passing a plain string where a domain ID is expected, and value objects make domain validation reusable before values reach entities or repositories.
+
+#### Repository Interface
+
+The repository interface is defined in the domain layer. Its concrete Drizzle implementation lives in the infrastructure layer.
+
+```ts
+export interface TodoRepository {
+  create(todo: Todo, ctx?: TransactionContext): Promise<void>;
+
+  update(todo: Todo, ctx?: TransactionContext): Promise<void>;
+
+  findById(todoId: TodoId, ctx?: TransactionContext): Promise<Todo | null>;
+
+  list(filter?: { status?: TodoStatus }, ctx?: TransactionContext): Promise<Todo[]>;
+
+  delete(todoId: TodoId, ctx?: TransactionContext): Promise<void>;
+}
+```
+
+> [!TIP]
+> Use cases need the capability to persist aggregates, not a dependency on Drizzle, SQL, PGlite, or a table shape. This keeps dependencies pointing inward.
 
 ### Application Layer
 
 The application layer contains one use case class per application action.
 
-**What**: Files follow names such as `create-todo-usecase.ts`, and each class exposes a single public `execute` method.
+#### One Use Case, One Public Method
 
-**Why**: A use case is an application transaction boundary. Keeping one public action per class makes policies, validation decisions, and persistence calls easier to read, test, and change without growing a broad service object.
+Use case files follow names such as `create-todo-usecase.ts`, and each class exposes a single public `execute` method.
 
-**What**: Use cases parse input into domain value objects, load entities through repository interfaces, invoke entity behavior, and save the result.
+```ts
+export class CreateTodoUseCase {
+  constructor(
+    private readonly todoRepository: TodoRepository,
+    private readonly transactionManager: TransactionManager,
+  ) {}
 
-**Why**: This keeps orchestration in the application layer while leaving domain rules in the domain layer and database details in infrastructure.
+  async execute(input: CreateTodoUseCaseInput): Promise<Todo> {
+    const todo = Todo.create({
+      description:
+        input.description === undefined || input.description === null
+          ? null
+          : TodoDescription.create(input.description),
+      title: TodoTitle.create(input.title),
+    });
 
-**What**: Use cases depend on `TransactionManager` and explicitly call `runInTransaction` around the database work they want to make atomic.
+    await this.transactionManager.runInTransaction((ctx) => this.todoRepository.create(todo, ctx));
 
-**Why**: A transaction is an application boundary, not always an HTTP request boundary. Some use cases may call external services, wait for an LLM/API response, or perform slow work before or after database writes. Controlling the transaction inside the use case lets the code keep transactions short and place them exactly around the state changes that must commit or roll back together.
+    return todo;
+  }
+}
+```
+
+> [!TIP]
+> A use case is an application action, and often a transaction boundary as well. Keeping one public action per class keeps policies and persistence calls easy to test.
+
+#### Explicit Transactions
+
+Use cases depend on `TransactionManager` and explicitly wrap the database work that must commit or roll back together.
+
+```ts
+export class StartTodoUseCase {
+  async execute(id: string): Promise<Todo> {
+    const todoId = TodoId.parse(id);
+
+    return this.transactionManager.runInTransaction(async (ctx) => {
+      const todo = await this.todoRepository.findById(todoId, ctx);
+
+      if (todo === null) {
+        throw new EntityNotFoundException("Todo", id);
+      }
+
+      todo.start();
+      await this.todoRepository.update(todo, ctx);
+
+      return todo;
+    });
+  }
+}
+```
+
+> [!TIP]
+> A transaction does not always match an HTTP request. When a use case calls external services or waits for an AI/API response, placing the transaction inside the use case keeps the database lock window intentional and short.
 
 ### Contract Package
 
 The contract package defines API routes, request schemas, response schemas, and OpenAPI generation.
 
-**What**: `packages/contract` owns the oRPC contract and Zod schemas. `apps/backend` implements that contract, and `apps/api-doc` reads it to generate API documentation.
+`packages/contract` owns the oRPC contract and Zod schemas. The backend implements the contract, and the API documentation app generates OpenAPI from it.
 
-**Why**: The API contract becomes a shared artifact instead of duplicated backend and frontend types. As the project grows, a frontend can consume the same contract without re-declaring endpoint paths and payloads.
+```ts
+export const TodoSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().min(1).max(100),
+  description: z.string().max(1000).nullable(),
+  status: TodoStatusSchema,
+  completedAt: z.string().datetime().nullable(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
 
-**What**: OpenAPI is generated from the contract.
+export const contract = {
+  todo: {
+    create: oc
+      .route({
+        method: "POST",
+        path: "/todos",
+        successStatus: 201,
+        tags: ["Todo"],
+      })
+      .input(CreateTodoInputSchema)
+      .output(TodoSchema),
+  },
+};
+```
 
-**Why**: Documentation stays close to the executable interface. This reduces drift between API behavior and API reference pages.
+> [!TIP]
+> The contract is a shared artifact. A future frontend can consume the same endpoint paths and payload types without re-declaring the API surface.
 
 ### API Layer
 
 The API layer uses Hono and oRPC to translate HTTP requests into use case calls.
 
-**What**: `apps/backend/src/bootstrap/app-container.ts` constructs the application container. It owns the concrete Drizzle repository, transaction manager, and use case instances.
+#### Composition Root
 
-**Why**: Object construction is a composition concern. Keeping it in one container keeps repository lifecycle, migration readiness, and shutdown behavior out of handlers and use cases.
+`apps/backend/src/bootstrap/app-container.ts` constructs concrete infrastructure and injects it into use cases.
 
-**What**: `apps/backend/src/api/app.ts` constructs the Hono app and passes an oRPC context containing the app container and request-scoped values.
+```ts
+export function createAppContainer(options: AppContainerOptions = {}): AppContainer {
+  const db = options.db ?? createDrizzleDatabase();
+  const ready = options.ready ?? migrateDrizzleSchema(db);
+  const todoRepository = new DrizzleTodoRepository(db, ready);
+  const transactionManager = new DrizzleTransactionManager(db, ready);
 
-**Why**: Hono remains the HTTP adapter, while oRPC receives the context that its handlers actually use. Request-scoped values such as request IDs or future authentication context can be added without changing use case constructors.
+  return {
+    async dispose(): Promise<void> {
+      await todoRepository.close();
+    },
+    todoUseCases: {
+      createTodo: new CreateTodoUseCase(todoRepository, transactionManager),
+      startTodo: new StartTodoUseCase(todoRepository, transactionManager),
+      completeTodo: new CompleteTodoUseCase(todoRepository, transactionManager),
+    },
+  };
+}
+```
 
-**What**: `orpc-router.ts` maps contract handlers to use cases through `context.container.todoUseCases` and translates domain exceptions into oRPC errors.
+> [!TIP]
+> Object construction is a composition concern. Keeping it in one container keeps repository lifecycle, migration readiness, and shutdown behavior out of handlers and use cases.
 
-**Why**: Error mapping is an adapter concern. Domain and application code can throw meaningful exceptions without depending on HTTP status codes or response formats.
+#### oRPC Context and Handlers
+
+The Hono app passes the container and request-scoped values to oRPC handlers through context.
+
+```ts
+app.use("*", async (c, next) => {
+  const context: ORPCContext = {
+    container,
+    requestId: c.get("requestId"),
+  };
+
+  const { matched, response } = await handler.handle(c.req.raw, {
+    context,
+  });
+
+  if (matched) {
+    return c.newResponse(response.body, response);
+  }
+
+  await next();
+});
+```
+
+The router maps contract operations to use cases and translates domain exceptions into API errors.
+
+```ts
+return os.router({
+  todo: {
+    start: os.todo.start.handler(({ context, input }) =>
+      mapApplicationErrors(async () =>
+        presentTodo(await context.container.todoUseCases.startTodo.execute(input.id)),
+      ),
+    ),
+  },
+});
+```
+
+> [!TIP]
+> Hono stays a thin HTTP adapter, while oRPC receives the context its handlers actually use. Request IDs and future authentication context can be added without changing use case constructors.
 
 ### Infrastructure Layer
 
 The infrastructure layer contains Drizzle, PGlite, schema definitions, and mappers.
 
-**What**: `DrizzleTodoRepository` implements `TodoRepository` using Drizzle ORM and PGlite.
+#### Drizzle Repository
 
-**Why**: PGlite gives the repository PostgreSQL-compatible behavior without requiring a separate database server for this reference implementation. Drizzle keeps SQL table access typed while still making database-specific details visible in infrastructure.
+`DrizzleTodoRepository` implements the domain repository interface using Drizzle and PGlite.
 
-**What**: `DrizzleTransactionManager` wraps Drizzle transactions in an infrastructure-agnostic `TransactionContext`.
+```ts
+export class DrizzleTodoRepository implements TodoRepository {
+  async create(todo: Todo, ctx?: TransactionContext): Promise<void> {
+    await this.ready;
 
-**Why**: Use cases can express transactional intent without importing Drizzle types. Repository implementations can still recover the concrete Drizzle transaction from the context when they need to execute SQL.
+    await this.getExecutor(ctx).insert(todoTable).values(toTodoTableInsert(todo));
+  }
 
-**What**: Drizzle schema files live flat under `src/infrastructure/psql/drizzle/schemas`, generated SQL migrations live under `src/infrastructure/psql/migrations`, and `todo-mapper.ts` converts between Drizzle rows and the `Todo` entity.
+  async findById(todoId: TodoId, ctx?: TransactionContext): Promise<Todo | null> {
+    await this.ready;
 
-**Why**: Database rows are not domain objects. Explicit mappers prevent column names, nullable database fields, and ORM types from leaking into use cases.
+    const [row] = await this.getExecutor(ctx)
+      .select()
+      .from(todoTable)
+      .where(eq(todoTable.id, todoId))
+      .limit(1);
 
-**What**: PGlite initialization runs the generated Drizzle migrations through `drizzle-orm/pglite/migrator`.
+    return row === undefined ? null : toTodo(row);
+  }
 
-**Why**: PGlite behaves like a PostgreSQL-compatible database, so keeping SQL migrations as the source of initialization makes local embedded storage and future PostgreSQL deployment follow the same schema history.
+  private getExecutor(ctx?: TransactionContext): DrizzleExecutor {
+    return ctx === undefined ? this.db : getDrizzleTransaction(ctx);
+  }
+}
+```
+
+> [!TIP]
+> PGlite gives this reference implementation PostgreSQL-compatible behavior without requiring a separate database server. Drizzle keeps table access typed while database details stay in infrastructure.
+
+#### Mapper
+
+`todo-mapper.ts` converts between database rows and the `Todo` aggregate.
+
+```ts
+export function toTodo(row: TodoTableRow): Todo {
+  return Todo.restore({
+    completedAt: row.completedAt,
+    createdAt: row.createdAt,
+    description: row.description === null ? null : TodoDescription.create(row.description),
+    id: TodoId.parse(row.id),
+    status: row.status,
+    title: TodoTitle.create(row.title),
+    updatedAt: row.updatedAt,
+  });
+}
+
+export function toTodoTableUpdate(todo: Todo): TodoTableUpdate {
+  const snapshot = todo.snapshot();
+
+  return {
+    completedAt: snapshot.completedAt,
+    description: snapshot.description?.value ?? null,
+    status: snapshot.status,
+    title: snapshot.title.value,
+    updatedAt: snapshot.updatedAt,
+  };
+}
+```
+
+> [!TIP]
+> Database rows are not domain objects. Explicit mappers prevent column names, nullable database fields, and ORM types from leaking into use cases.
+
+#### Schema and Migrations
+
+Drizzle schema files live under `src/infrastructure/psql/drizzle/schemas`, and generated SQL migrations live under `src/infrastructure/psql/migrations`.
+
+```ts
+export const todoTable = pgTable(
+  "todos",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    description: text("description"),
+    status: todoStatusEnum("status").notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("todos_status_idx").on(table.status)],
+);
+```
+
+```ts
+export async function migrateDrizzleSchema(db: DrizzleDatabase): Promise<void> {
+  await migrate(db, {
+    migrationsFolder,
+  });
+}
+```
+
+> [!TIP]
+> PGlite behaves like a PostgreSQL-compatible database, so generated SQL migrations can be the schema history for both local embedded storage and a future PostgreSQL deployment.
+
+#### Transaction Adapter
+
+`DrizzleTransactionManager` wraps concrete Drizzle transactions behind the domain-level `TransactionContext`.
+
+```ts
+export class DrizzleTransactionManager implements TransactionManager {
+  async runInTransaction<T>(operation: (ctx: TransactionContext) => Promise<T>): Promise<T> {
+    await this.ready;
+
+    return this.db.transaction((tx) => operation(new DrizzleTransactionContext(tx)));
+  }
+}
+```
+
+> [!TIP]
+> Use cases express transactional intent without importing Drizzle types. Only repository implementations retrieve the concrete transaction, and only inside the infrastructure layer.
 
 ### API Documentation
 
-The API documentation app is a separate workspace app.
+The API documentation app is a separate workspace app. It serves Scalar UI and `/openapi.json` from `packages/contract`.
 
-**What**: `apps/api-doc` serves Scalar UI and `/openapi.json` from `packages/contract`.
+```ts
+app.get("/openapi.json", async (c) =>
+  c.json(
+    await createOpenAPISpec({
+      servers: [
+        {
+          description: "Backend API",
+          url: Bun.env.BACKEND_API_URL ?? "http://localhost:3000",
+        },
+      ],
+    }),
+  ),
+);
 
-**Why**: API documentation is deployed and tested as an app, but it does not own API definitions. The docs are always generated from the same contract used by the backend.
+app.get(
+  "/",
+  Scalar({
+    orderSchemaPropertiesBy: "preserve",
+    pageTitle: "Hono DDD API Reference",
+    url: "/openapi.json",
+  }),
+);
+```
+
+> [!TIP]
+> API documentation is deployed and tested as an app, but it does not own API definitions. The docs are generated from the same contract used by the backend.
 
 ### Monorepo Tooling
 
 This repository uses Bun workspaces and Turborepo.
 
-**What**: Package-local scripts run builds, type checks, and tests, while root scripts orchestrate them through Turbo.
+Package-local scripts run builds, type checks, and tests, while root scripts orchestrate them through Turbo.
 
-**Why**: Each package owns the commands that make sense for it, and the root can validate the whole graph consistently with caching.
+```json
+{
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "check": "turbo run check",
+    "validate": "turbo run build check"
+  },
+  "packageManager": "bun@1.3.14"
+}
+```
 
-**What**: Shared TypeScript settings live in `packages/typescript-config`.
+Shared TypeScript settings live in `packages/typescript-config` and are consumed by each workspace package.
 
-**Why**: TypeScript options are versioned as a workspace package. Apps and packages can extend the same base config without copying root-level files.
+```json
+{
+  "extends": "../../packages/typescript-config/base.json",
+  "compilerOptions": {
+    "types": ["bun"]
+  },
+  "include": ["src/**/*.ts"]
+}
+```
+
+> [!TIP]
+> Each package owns the commands that make sense for it, while the root validates the workspace graph with Turbo caching. TypeScript settings are versioned as a workspace package instead of copied into every app.
 
 ### Code Quality
 
 The repository uses Oxlint and Oxfmt.
 
-**What**: `bun run lint`, `bun run format`, and `bun run check` are available from the root.
+```json
+{
+  "scripts": {
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "format": "oxfmt --check",
+    "format:fix": "oxfmt ."
+  }
+}
+```
 
-**Why**: Fast linting and formatting reduce friction enough that checks can run frequently in local development and CI.
+> [!TIP]
+> Fast linting and formatting reduce friction enough that checks can run frequently in local development and CI.
 
 ### Supply Chain Safety
 
 Dependency updates are intentionally conservative.
 
-**What**: `bunfig.toml` sets `minimumReleaseAge` to seven days, and `.ncurc.json` configures npm-check-updates with a seven-day cooldown and exact versions.
+`bunfig.toml` sets `minimumReleaseAge` to seven days.
 
-**Why**: Waiting before installing freshly published package versions reduces exposure to short-lived malicious releases. Exact dependency versions also make diffs and audits easier to reason about.
+```toml
+[install]
+minimumReleaseAge = 604800
+```
+
+`.ncurc.json` configures npm-check-updates with a seven-day cooldown and exact versions.
+
+```json
+{
+  "cooldown": 7,
+  "removeRange": true,
+  "format": ["group"],
+  "peer": true
+}
+```
+
+> [!TIP]
+> Waiting before installing freshly published versions reduces exposure to short-lived malicious releases. Exact versions also make dependency diffs and audits easier to review.
 
 ### CI
 
 GitHub Actions runs checks on pushes to `main` and `develop`, and on pull requests.
 
-**What**: CI installs with a frozen lockfile, audits dependencies, restores Turbo cache, runs type checks, tests, and quality checks, and scans workflows with zizmor.
+```yaml
+- name: Install dependencies
+  run: bun install --frozen-lockfile
 
-**Why**: The project validates code, dependencies, and workflow configuration before changes are merged or pushed to shared branches.
+- name: Audit dependencies
+  run: bun audit --audit-level high
+
+- name: Run tests and checks
+  run: bun turbo run type-check test quality --cache-dir="$HOME/.cache/turbo"
+```
+
+> [!TIP]
+> CI validates code, dependencies, and workflow configuration before changes are merged or pushed to shared branches.
 
 ## REST API
 
