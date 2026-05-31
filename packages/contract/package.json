@@ -1,0 +1,23 @@
+{
+  "name": "@honoddd/contract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "bun build ./src/index.ts --target bun --outdir dist --external @orpc/contract --external @orpc/openapi --external @orpc/zod --external zod",
+    "test": "bun test",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@orpc/contract": "latest",
+    "@orpc/openapi": "latest",
+    "@orpc/zod": "latest",
+    "zod": "latest"
+  }
+}
