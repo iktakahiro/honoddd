@@ -2,9 +2,13 @@ import { createApp } from "./api/app";
 import { createAppContainer } from "./bootstrap/app-container";
 
 const port = Number(Bun.env.PORT ?? 3000);
+const corsOrigins = Bun.env.CORS_ORIGINS?.split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 const container = createAppContainer();
 const app = createApp({
   container,
+  ...(corsOrigins === undefined || corsOrigins.length === 0 ? {} : { corsOrigins }),
 });
 
 const server = Bun.serve({

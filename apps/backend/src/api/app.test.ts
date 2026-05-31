@@ -6,6 +6,38 @@ import { createDrizzleDatabase } from "../infrastructure/psql/drizzle/drizzle-da
 import { createApp } from "./app";
 
 describe("backend app", () => {
+  it("allows API docs origin to send browser test requests", async () => {
+    const db = createDrizzleDatabase(new PGlite());
+    const container = createAppContainer({
+      db,
+    });
+    const app = createApp({
+      container,
+    });
+
+    try {
+      const preflightResponse = await app.request("/todos", {
+        headers: {
+          "access-control-request-headers": "content-type",
+          "access-control-request-method": "POST",
+          origin: "http://localhost:3001",
+        },
+        method: "OPTIONS",
+      });
+
+      expect(preflightResponse.status).toBe(204);
+      expect(preflightResponse.headers.get("access-control-allow-origin")).toBe(
+        "http://localhost:3001",
+      );
+      expect(preflightResponse.headers.get("access-control-allow-methods")).toContain("POST");
+      expect(preflightResponse.headers.get("access-control-allow-headers")).toContain(
+        "Content-Type",
+      );
+    } finally {
+      await container.dispose();
+    }
+  });
+
   it("creates, lists, starts, and completes todos through REST routes", async () => {
     const db = createDrizzleDatabase(new PGlite());
     const container = createAppContainer({

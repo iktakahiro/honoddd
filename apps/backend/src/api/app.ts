@@ -2,13 +2,17 @@ import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { onError } from "@orpc/server";
 import { ZodSmartCoercionPlugin } from "@orpc/zod";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 
 import type { AppContainer } from "../bootstrap/app-container";
 import type { ORPCContext } from "./orpc-context";
 import { createORPCRouter } from "./orpc-router";
 
+const defaultCorsOrigins = ["http://localhost:3001", "http://127.0.0.1:3001"];
+
 export type AppDependencies = {
   container: AppContainer;
+  corsOrigins?: string[];
 };
 
 export function createApp(dependencies: AppDependencies) {
@@ -22,6 +26,16 @@ export function createApp(dependencies: AppDependencies) {
     ],
     plugins: [new ZodSmartCoercionPlugin()],
   });
+
+  app.use(
+    "*",
+    cors({
+      allowHeaders: ["Content-Type", "Authorization"],
+      allowMethods: ["GET", "HEAD", "POST", "PATCH", "DELETE", "OPTIONS"],
+      maxAge: 600,
+      origin: dependencies.corsOrigins ?? defaultCorsOrigins,
+    }),
+  );
 
   app.get("/health", (c) =>
     c.json({
