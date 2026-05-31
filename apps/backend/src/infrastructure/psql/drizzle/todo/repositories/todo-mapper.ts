@@ -1,8 +1,8 @@
-import { Todo } from "../../../../domain/todo/entities/todo";
-import { TodoDescription } from "../../../../domain/todo/value-objects/todo-description";
-import { TodoId } from "../../../../domain/todo/value-objects/todo-id";
-import { TodoTitle } from "../../../../domain/todo/value-objects/todo-title";
-import type { TodoTableInsert, TodoTableRow } from "../todo-schema";
+import { Todo } from "../../../../../domain/todo/entities/todo";
+import { TodoDescription } from "../../../../../domain/todo/value-objects/todo-description";
+import { TodoId } from "../../../../../domain/todo/value-objects/todo-id";
+import { TodoTitle } from "../../../../../domain/todo/value-objects/todo-title";
+import type { TodoTableInsert, TodoTableRow } from "../../schemas/todo-schema";
 
 export function toTodo(row: TodoTableRow): Todo {
   return Todo.restore({

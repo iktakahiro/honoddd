@@ -1,17 +1,18 @@
 import { describe, expect, it } from "bun:test";
+import { PGlite } from "@electric-sql/pglite";
 
-import { Todo } from "../../../../domain/todo/entities/todo";
-import { TodoDescription } from "../../../../domain/todo/value-objects/todo-description";
-import { TodoId } from "../../../../domain/todo/value-objects/todo-id";
-import { TodoStatus } from "../../../../domain/todo/value-objects/todo-status";
-import { TodoTitle } from "../../../../domain/todo/value-objects/todo-title";
+import { Todo } from "../../../../../domain/todo/entities/todo";
+import { TodoDescription } from "../../../../../domain/todo/value-objects/todo-description";
+import { TodoId } from "../../../../../domain/todo/value-objects/todo-id";
+import { TodoStatus } from "../../../../../domain/todo/value-objects/todo-status";
+import { TodoTitle } from "../../../../../domain/todo/value-objects/todo-title";
 import { createDrizzleDatabase, migrateDrizzleSchema } from "../../drizzle-database";
 import { DrizzleTransactionManager } from "../../drizzle-transaction";
 import { DrizzleTodoRepository } from "./drizzle-todo-repository";
 
 describe("DrizzleTodoRepository", () => {
   it("persists and restores todo aggregate state with PGlite", async () => {
-    const db = createDrizzleDatabase();
+    const db = createDrizzleDatabase(new PGlite());
     const ready = migrateDrizzleSchema(db);
     const repository = new DrizzleTodoRepository(db, ready);
     const transactionManager = new DrizzleTransactionManager(db, ready);
@@ -54,7 +55,7 @@ describe("DrizzleTodoRepository", () => {
   });
 
   it("rolls back writes through transaction context", async () => {
-    const db = createDrizzleDatabase();
+    const db = createDrizzleDatabase(new PGlite());
     const ready = migrateDrizzleSchema(db);
     const repository = new DrizzleTodoRepository(db, ready);
     const transactionManager = new DrizzleTransactionManager(db, ready);

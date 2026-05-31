@@ -1,4 +1,4 @@
-import type { TransactionContext, TransactionManager } from "../../domain/shared";
+import type { TransactionContext, TransactionManager } from "../../../domain/shared";
 import {
   createDrizzleDatabase,
   migrateDrizzleSchema,

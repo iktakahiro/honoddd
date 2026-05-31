@@ -10,6 +10,7 @@ lerna-debug.log*
 
 # database
 *.sqlite
+.pglite/
 
 # package-json
 package-json.lock

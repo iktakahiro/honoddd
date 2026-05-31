@@ -1,19 +1,10 @@
 import { createApp } from "./api/app";
-import {
-  createDrizzleDatabase,
-  migrateDrizzleSchema,
-} from "./infrastructure/drizzle/drizzle-database";
-import { DrizzleTransactionManager } from "./infrastructure/drizzle/drizzle-transaction";
-import { DrizzleTodoRepository } from "./infrastructure/drizzle/todo/repositories/drizzle-todo-repository";
+import { createAppContainer } from "./bootstrap/app-container";
 
 const port = Number(Bun.env.PORT ?? 3000);
-const db = createDrizzleDatabase();
-const ready = migrateDrizzleSchema(db);
-const todoRepository = new DrizzleTodoRepository(db, ready);
-const transactionManager = new DrizzleTransactionManager(db, ready);
+const container = createAppContainer();
 const app = createApp({
-  todoRepository,
-  transactionManager,
+  container,
 });
 
 const server = Bun.serve({
@@ -27,7 +18,7 @@ console.log(`Backend API listening on http://localhost:${port}`);
 async function shutdown(): Promise<void> {
   clearInterval(keepAliveInterval);
   server.stop(true);
-  await todoRepository.close();
+  await container.dispose();
   process.exit(0);
 }
 

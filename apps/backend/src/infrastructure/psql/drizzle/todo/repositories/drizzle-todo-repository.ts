@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
 
-import type { TransactionContext } from "../../../../domain/shared";
-import type { Todo } from "../../../../domain/todo/entities/todo";
-import type { TodoRepository } from "../../../../domain/todo/repositories/todo-repository";
-import type { TodoId } from "../../../../domain/todo/value-objects/todo-id";
-import type { TodoStatus } from "../../../../domain/todo/value-objects/todo-status";
+import type { TransactionContext } from "../../../../../domain/shared";
+import type { Todo } from "../../../../../domain/todo/entities/todo";
+import type { TodoRepository } from "../../../../../domain/todo/repositories/todo-repository";
+import type { TodoId } from "../../../../../domain/todo/value-objects/todo-id";
+import type { TodoStatus } from "../../../../../domain/todo/value-objects/todo-status";
 import {
   createDrizzleDatabase,
   migrateDrizzleSchema,
@@ -12,7 +12,7 @@ import {
   type DrizzleExecutor,
 } from "../../drizzle-database";
 import { getDrizzleTransaction } from "../../drizzle-transaction";
-import { todoTable } from "../todo-schema";
+import { todoTable } from "../../schemas/todo-schema";
 import { toTodo, toTodoTableInsert } from "./todo-mapper";
 
 export class DrizzleTodoRepository implements TodoRepository {

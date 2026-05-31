@@ -1,22 +1,18 @@
 import { describe, expect, it } from "bun:test";
+import { PGlite } from "@electric-sql/pglite";
 
-import {
-  createDrizzleDatabase,
-  migrateDrizzleSchema,
-} from "../infrastructure/drizzle/drizzle-database";
-import { DrizzleTransactionManager } from "../infrastructure/drizzle/drizzle-transaction";
-import { DrizzleTodoRepository } from "../infrastructure/drizzle/todo/repositories/drizzle-todo-repository";
+import { createAppContainer } from "../bootstrap/app-container";
+import { createDrizzleDatabase } from "../infrastructure/psql/drizzle/drizzle-database";
 import { createApp } from "./app";
 
 describe("backend app", () => {
   it("creates, lists, starts, and completes todos through REST routes", async () => {
-    const db = createDrizzleDatabase();
-    const ready = migrateDrizzleSchema(db);
-    const todoRepository = new DrizzleTodoRepository(db, ready);
-    const transactionManager = new DrizzleTransactionManager(db, ready);
+    const db = createDrizzleDatabase(new PGlite());
+    const container = createAppContainer({
+      db,
+    });
     const app = createApp({
-      todoRepository,
-      transactionManager,
+      container,
     });
 
     try {
@@ -59,7 +55,7 @@ describe("backend app", () => {
       expect(completed.status).toBe("completed");
       expect(completed.completedAt).toBeString();
     } finally {
-      await todoRepository.close();
+      await container.dispose();
     }
   });
 });

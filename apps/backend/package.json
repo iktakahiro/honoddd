@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "bun build ./src/index.ts --target bun --outdir dist --external @honoddd/contract",
+    "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "dev": "bun --hot src/index.ts",
     "start": "bun src/index.ts",
     "test": "bun test",
@@ -23,6 +25,7 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@honoddd/typescript-config": "workspace:*"
+    "@honoddd/typescript-config": "workspace:*",
+    "drizzle-kit": "0.31.10"
   }
 }
