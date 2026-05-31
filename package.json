@@ -1,0 +1,33 @@
+{
+  "name": "honoddd",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "dev:backend": "turbo run dev --filter=@honoddd/backend",
+    "dev:api-doc": "turbo run dev --filter=@honoddd/api-doc",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
+    "format": "oxfmt --check",
+    "format:fix": "oxfmt .",
+    "check": "bun run typecheck && bun run test && bun run lint && bun run format",
+    "deps:check": "bunx npm-check-updates"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bun-types": "latest",
+    "npm-check-updates": "latest",
+    "oxfmt": "latest",
+    "oxlint": "latest",
+    "turbo": "latest",
+    "typescript": "latest"
+  },
+  "packageManager": "bun@1.3.14"
+}
