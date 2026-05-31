@@ -1,5 +1,5 @@
-import { describe, expect, it } from "bun:test";
 import { PGlite } from "@electric-sql/pglite";
+import { describe, expect, it } from "bun:test";
 
 import { createAppContainer } from "../bootstrap/app-container";
 import { createDrizzleDatabase } from "../infrastructure/psql/drizzle/drizzle-database";

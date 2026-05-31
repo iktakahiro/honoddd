@@ -1,5 +1,5 @@
-import { describe, expect, it } from "bun:test";
 import { PGlite } from "@electric-sql/pglite";
+import { describe, expect, it } from "bun:test";
 
 import { Todo } from "../../../../../domain/todo/entities/todo";
 import { TodoDescription } from "../../../../../domain/todo/value-objects/todo-description";
