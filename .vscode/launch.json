@@ -1,0 +1,46 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "API (backend)",
+      "type": "bun",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/backend/src/index.ts",
+      "runtimeArgs": [
+        "--watch"
+      ],
+      "cwd": "${workspaceFolder}/apps/backend",
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": "3000"
+      },
+      "preLaunchTask": "kill-port-3000"
+    },
+    {
+      "name": "API Docs",
+      "type": "bun",
+      "request": "launch",
+      "program": "${workspaceFolder}/apps/api-doc/src/index.ts",
+      "runtimeArgs": [
+        "--watch"
+      ],
+      "cwd": "${workspaceFolder}/apps/api-doc",
+      "env": {
+        "BACKEND_API_URL": "http://localhost:3000",
+        "NODE_ENV": "development",
+        "PORT": "3001"
+      },
+      "preLaunchTask": "kill-port-3001"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "All (Dev)",
+      "configurations": [
+        "API (backend)",
+        "API Docs"
+      ],
+      "stopAll": true
+    }
+  ]
+}
