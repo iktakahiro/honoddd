@@ -204,15 +204,15 @@ Repository Interface は Domain Layer に定義します。Drizzle による具�
 
 ```ts
 export interface TodoRepository {
-  create(todo: Todo, ctx?: TransactionContext): Promise<void>;
+  create(ctx: TransactionContext, todo: Todo): Promise<void>;
 
-  update(todo: Todo, ctx?: TransactionContext): Promise<void>;
+  update(ctx: TransactionContext, todo: Todo): Promise<void>;
 
-  findById(todoId: TodoId, ctx?: TransactionContext): Promise<Todo | null>;
+  findById(ctx: TransactionContext, todoId: TodoId): Promise<Todo | null>;
 
-  list(filter?: { status?: TodoStatus }, ctx?: TransactionContext): Promise<Todo[]>;
+  list(ctx: TransactionContext, filter?: { status?: TodoStatus }): Promise<Todo[]>;
 
-  delete(todoId: TodoId, ctx?: TransactionContext): Promise<void>;
+  delete(ctx: TransactionContext, todoId: TodoId): Promise<void>;
 }
 ```
 
@@ -243,7 +243,7 @@ export class CreateTodoUseCase {
       title: TodoTitle.create(input.title),
     });
 
-    await this.transactionManager.runInTransaction((ctx) => this.todoRepository.create(todo, ctx));
+    await this.transactionManager.runInTransaction((ctx) => this.todoRepository.create(ctx, todo));
 
     return todo;
   }
@@ -263,14 +263,14 @@ export class StartTodoUseCase {
     const todoId = TodoId.parse(id);
 
     return this.transactionManager.runInTransaction(async (ctx) => {
-      const todo = await this.todoRepository.findById(todoId, ctx);
+      const todo = await this.todoRepository.findById(ctx, todoId);
 
       if (todo === null) {
         throw new EntityNotFoundException("Todo", id);
       }
 
       todo.start();
-      await this.todoRepository.update(todo, ctx);
+      await this.todoRepository.update(ctx, todo);
 
       return todo;
     });
@@ -397,13 +397,13 @@ Infrastructure Layer には Drizzle、PGlite、schema definition、mapper を置
 
 ```ts
 export class DrizzleTodoRepository implements TodoRepository {
-  async create(todo: Todo, ctx?: TransactionContext): Promise<void> {
+  async create(ctx: TransactionContext, todo: Todo): Promise<void> {
     await this.ready;
 
     await this.getExecutor(ctx).insert(todoTable).values(toTodoTableInsert(todo));
   }
 
-  async findById(todoId: TodoId, ctx?: TransactionContext): Promise<Todo | null> {
+  async findById(ctx: TransactionContext, todoId: TodoId): Promise<Todo | null> {
     await this.ready;
 
     const [row] = await this.getExecutor(ctx)
@@ -415,8 +415,8 @@ export class DrizzleTodoRepository implements TodoRepository {
     return row === undefined ? null : toTodo(row);
   }
 
-  private getExecutor(ctx?: TransactionContext): DrizzleExecutor {
-    return ctx === undefined ? this.db : getDrizzleTransaction(ctx);
+  private getExecutor(ctx: TransactionContext): DrizzleExecutor {
+    return getDrizzleTransaction(ctx);
   }
 }
 ```
