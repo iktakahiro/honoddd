@@ -25,9 +25,11 @@ describe("DrizzleTodoRepository", () => {
         title: TodoTitle.create("Persist todos with Drizzle"),
       });
 
-      await transactionManager.runInTransaction((ctx) => repository.create(todo, ctx));
+      await transactionManager.runInTransaction((ctx) => repository.create(ctx, todo));
 
-      const found = await repository.findById(todo.id);
+      const found = await transactionManager.runInTransaction((ctx) =>
+        repository.findById(ctx, todo.id),
+      );
 
       expect(found).not.toBeNull();
       expect(found?.id).toBe(todo.id);
@@ -37,18 +39,22 @@ describe("DrizzleTodoRepository", () => {
       expect(found?.createdAt.toISOString()).toBe("2026-05-31T00:00:00.000Z");
 
       todo.start(new Date("2026-05-31T00:01:00.000Z"));
-      await transactionManager.runInTransaction((ctx) => repository.update(todo, ctx));
+      await transactionManager.runInTransaction((ctx) => repository.update(ctx, todo));
 
-      const inProgressTodos = await repository.list({
-        status: TodoStatus.InProgress,
-      });
+      const inProgressTodos = await transactionManager.runInTransaction((ctx) =>
+        repository.list(ctx, {
+          status: TodoStatus.InProgress,
+        }),
+      );
 
       expect(inProgressTodos).toHaveLength(1);
       expect(inProgressTodos[0]?.id).toBe(todo.id);
 
-      await transactionManager.runInTransaction((ctx) => repository.delete(todo.id, ctx));
+      await transactionManager.runInTransaction((ctx) => repository.delete(ctx, todo.id));
 
-      await expect(repository.findById(todo.id)).resolves.toBeNull();
+      await expect(
+        transactionManager.runInTransaction((ctx) => repository.findById(ctx, todo.id)),
+      ).resolves.toBeNull();
     } finally {
       await repository.close();
     }
@@ -68,12 +74,14 @@ describe("DrizzleTodoRepository", () => {
 
       await expect(
         transactionManager.runInTransaction(async (ctx) => {
-          await repository.create(todo, ctx);
+          await repository.create(ctx, todo);
           await ctx.rollback();
         }),
       ).rejects.toThrow();
 
-      await expect(repository.findById(todo.id)).resolves.toBeNull();
+      await expect(
+        transactionManager.runInTransaction((ctx) => repository.findById(ctx, todo.id)),
+      ).resolves.toBeNull();
     } finally {
       await repository.close();
     }

@@ -25,7 +25,7 @@ export class FindTodoUseCase {
     const todoId = TodoId.parse(id);
 
     return this.transactionManager.runInTransaction(async (ctx) => {
-      const todo = await this.todoRepository.findById(todoId, ctx);
+      const todo = await this.todoRepository.findById(ctx, todoId);
 
       if (todo === null) {
         throw new EntityNotFoundException("Todo", id);

@@ -14,44 +14,44 @@ export interface TodoRepository {
   /**
    * Persists a new Todo aggregate.
    *
+   * @param ctx - Transaction context.
    * @param todo - Todo aggregate to create.
-   * @param ctx - Optional transaction context.
    */
-  create(todo: Todo, ctx?: TransactionContext): Promise<void>;
+  create(ctx: TransactionContext, todo: Todo): Promise<void>;
 
   /**
    * Persists changes to an existing Todo aggregate.
    *
+   * @param ctx - Transaction context.
    * @param todo - Todo aggregate to update.
-   * @param ctx - Optional transaction context.
    */
-  update(todo: Todo, ctx?: TransactionContext): Promise<void>;
+  update(ctx: TransactionContext, todo: Todo): Promise<void>;
 
   /**
    * Finds a Todo by identifier.
    *
+   * @param ctx - Transaction context.
    * @param todoId - Todo identifier.
-   * @param ctx - Optional transaction context.
    *
    * @returns Matching Todo or `null` when it does not exist.
    */
-  findById(todoId: TodoId, ctx?: TransactionContext): Promise<Todo | null>;
+  findById(ctx: TransactionContext, todoId: TodoId): Promise<Todo | null>;
 
   /**
    * Lists Todo aggregates.
    *
+   * @param ctx - Transaction context.
    * @param filter - Optional filter values.
-   * @param ctx - Optional transaction context.
    *
    * @returns Todos matching the filter.
    */
-  list(filter?: { status?: TodoStatus }, ctx?: TransactionContext): Promise<Todo[]>;
+  list(ctx: TransactionContext, filter?: { status?: TodoStatus }): Promise<Todo[]>;
 
   /**
    * Deletes a Todo by identifier.
    *
+   * @param ctx - Transaction context.
    * @param todoId - Todo identifier.
-   * @param ctx - Optional transaction context.
    */
-  delete(todoId: TodoId, ctx?: TransactionContext): Promise<void>;
+  delete(ctx: TransactionContext, todoId: TodoId): Promise<void>;
 }

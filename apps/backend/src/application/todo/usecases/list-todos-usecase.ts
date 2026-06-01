@@ -20,6 +20,6 @@ export class ListTodosUseCase {
    * @returns Matching Todo aggregates.
    */
   async execute(filter?: { status?: TodoStatus }): Promise<Todo[]> {
-    return this.transactionManager.runInTransaction((ctx) => this.todoRepository.list(filter, ctx));
+    return this.transactionManager.runInTransaction((ctx) => this.todoRepository.list(ctx, filter));
   }
 }
