@@ -10,6 +10,9 @@ type ScalarOperation = {
   path?: string;
 };
 
+const getOperationKey = (operation: ScalarOperation) =>
+  `${operation.method?.toUpperCase() ?? ""} ${operation.path ?? ""}`;
+
 /**
  * Creates the API documentation Hono application.
  *
@@ -56,10 +59,8 @@ export function createApp() {
           "POST /todos/{id}/complete",
         ];
 
-        const getKey = (operation: ScalarOperation) =>
-          `${operation.method?.toUpperCase() ?? ""} ${operation.path ?? ""}`;
         const getOrder = (operation: ScalarOperation) => {
-          const index = operationOrder.indexOf(getKey(operation));
+          const index = operationOrder.indexOf(getOperationKey(operation));
 
           return index === -1 ? Number.MAX_SAFE_INTEGER : index;
         };
@@ -70,7 +71,7 @@ export function createApp() {
           return order;
         }
 
-        return getKey(a).localeCompare(getKey(b));
+        return getOperationKey(a).localeCompare(getOperationKey(b));
       },
       orderSchemaPropertiesBy: "preserve",
       pageTitle: "Hono DDD API Reference",

@@ -92,7 +92,7 @@ export class DrizzleTodoRepository implements TodoRepository {
             .where(eq(todoTable.status, filter.status))
             .orderBy(todoTable.createdAt);
 
-    return rows.map(toTodo);
+    return rows.map((row) => toTodo(row));
   }
 
   /**

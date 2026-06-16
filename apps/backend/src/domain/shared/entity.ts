@@ -6,26 +6,26 @@
  * reference or mutable state.
  */
 export abstract class Entity<TId> {
-  protected readonly _createdAt: Date;
-  protected readonly _id: TId;
-  protected _updatedAt: Date;
+  protected readonly createdAtValue: Date;
+  protected readonly idValue: TId;
+  protected updatedAtValue: Date;
 
   protected constructor(id: TId, createdAt?: Date, updatedAt?: Date) {
-    this._id = id;
-    this._createdAt = createdAt ?? new Date();
-    this._updatedAt = updatedAt ?? new Date();
+    this.idValue = id;
+    this.createdAtValue = createdAt ?? new Date();
+    this.updatedAtValue = updatedAt ?? new Date();
   }
 
   get createdAt(): Date {
-    return this._createdAt;
+    return this.createdAtValue;
   }
 
   get id(): TId {
-    return this._id;
+    return this.idValue;
   }
 
   get updatedAt(): Date {
-    return this._updatedAt;
+    return this.updatedAtValue;
   }
 
   equals(other: Entity<TId> | null | undefined): boolean {
@@ -37,10 +37,10 @@ export abstract class Entity<TId> {
       return true;
     }
 
-    return this.constructor === other.constructor && this._id === other._id;
+    return this.constructor === other.constructor && this.idValue === other.idValue;
   }
 
   protected touch(now = new Date()): void {
-    this._updatedAt = now;
+    this.updatedAtValue = now;
   }
 }

@@ -1,5 +1,4 @@
-import type { Brand, EntityIdValue } from "../../shared";
-import { makeIdVO } from "../../shared";
+import { type Brand, type EntityIdValue, makeIdVO } from "../../shared";
 
 /**
  * Branded UUID identifier for Todo entities.

@@ -7,10 +7,10 @@ import { contract } from "./contract";
  * Options for generating the OpenAPI document.
  */
 export type CreateOpenAPISpecOptions = {
-  servers?: Array<{
+  servers?: {
     description?: string;
     url: string;
-  }>;
+  }[];
 };
 
 /**

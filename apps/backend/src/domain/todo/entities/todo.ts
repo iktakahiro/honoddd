@@ -1,8 +1,8 @@
 import { DomainException, Entity } from "../../shared";
-import { TodoDescription } from "../value-objects/todo-description";
+import type { TodoDescription } from "../value-objects/todo-description";
 import { TodoId } from "../value-objects/todo-id";
 import { TodoStatus } from "../value-objects/todo-status";
-import { TodoTitle } from "../value-objects/todo-title";
+import type { TodoTitle } from "../value-objects/todo-title";
 
 /**
  * Serializable state required to reconstruct a Todo aggregate.

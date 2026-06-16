@@ -31,17 +31,19 @@ export function createORPCRouter() {
         ),
       ),
       list: os.todo.list.handler(({ context, input }) =>
-        mapApplicationErrors(async () => ({
-          items: (
-            await context.container.todoUseCases.listTodos.execute(
-              input.status === undefined
-                ? undefined
-                : {
-                    status: input.status,
-                  },
-            )
-          ).map(presentTodo),
-        })),
+        mapApplicationErrors(async () => {
+          const todos = await context.container.todoUseCases.listTodos.execute(
+            input.status === undefined
+              ? undefined
+              : {
+                  status: input.status,
+                },
+          );
+
+          return {
+            items: todos.map((todo) => presentTodo(todo)),
+          };
+        }),
       ),
       remove: os.todo.remove.handler(({ context, input }) =>
         mapApplicationErrors(() => context.container.todoUseCases.deleteTodo.execute(input.id)),
