@@ -17,9 +17,9 @@
     "check": "bun run type-check && bun run test"
   },
   "dependencies": {
-    "@orpc/contract": "1.14.3",
-    "@orpc/openapi": "1.14.3",
-    "@orpc/zod": "1.14.3",
+    "@orpc/contract": "1.14.6",
+    "@orpc/openapi": "1.14.6",
+    "@orpc/zod": "1.14.6",
     "zod": "4.4.3"
   },
   "devDependencies": {

@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "@honoddd/contract": "workspace:*",
-    "@scalar/hono-api-reference": "0.10.19",
-    "hono": "4.12.22"
+    "@scalar/hono-api-reference": "0.11.3",
+    "hono": "4.12.25"
   },
   "devDependencies": {
     "@honoddd/typescript-config": "workspace:*"
